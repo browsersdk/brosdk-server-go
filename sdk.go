@@ -136,12 +136,15 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("non-OK status code: %d", resp.StatusCode)
+	}
 	return resp, nil
 }
 
 // GetUserSig retrieves user signature with the specified parameters
-func (c *Client) GetUserSig(ctx context.Context, req *GetUserSigRequest) (*GetUserSigResponse, error) {
-	httpReq, err := c.newRequest(ctx, "POST", "/api/usersig", req)
+func (c *Client) GetUserSig(ctx context.Context, req *GetUserSigRequest) (*UserSigData, error) {
+	httpReq, err := c.newRequest(ctx, "POST", "/api/v2/browser/getUserSig", req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GetUserSig request: %w", err)
 	}
@@ -152,21 +155,21 @@ func (c *Client) GetUserSig(ctx context.Context, req *GetUserSigRequest) (*GetUs
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GetUserSig request failed with status: %d", resp.StatusCode)
-	}
-
 	var result GetUserSigResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode GetUserSig response: %w", err)
 	}
 
-	return &result, nil
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to get user signature: %s", result.Msg)
+	}
+
+	return &result.Data, nil
 }
 
 // EnvCreate creates a new environment with the specified parameters
-func (c *Client) EnvCreate(ctx context.Context, req *EnvCreateRequest) (*EnvCreateResponse, error) {
-	httpReq, err := c.newRequest(ctx, "POST", "/api/env", req)
+func (c *Client) EnvCreate(ctx context.Context, req *EnvInfo) (*EnvInfo, error) {
+	httpReq, err := c.newRequest(ctx, "POST", "/api/v2/browser/create", req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create EnvCreate request: %w", err)
 	}
@@ -177,20 +180,20 @@ func (c *Client) EnvCreate(ctx context.Context, req *EnvCreateRequest) (*EnvCrea
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("EnvCreate request failed with status: %d", resp.StatusCode)
-	}
-
-	var result EnvCreateResponse
+	var result EnvResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode EnvCreate response: %w", err)
 	}
 
-	return &result, nil
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to create environment: %s", result.Msg)
+	}
+
+	return &result.Data, nil
 }
 
 // EnvUpdate updates browser environment
-func (c *Client) EnvUpdate(ctx context.Context, req *EnvCreateRequest) (*EnvCreateResponse, error) {
+func (c *Client) EnvUpdate(ctx context.Context, req *EnvInfo) (*EnvInfo, error) {
 	httpReq, err := c.newRequest(ctx, "POST", "/api/v2/browser/update", req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create UpdateV2 request: %w", err)
@@ -202,45 +205,45 @@ func (c *Client) EnvUpdate(ctx context.Context, req *EnvCreateRequest) (*EnvCrea
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("UpdateV2 request failed with status: %d", resp.StatusCode)
-	}
-
-	var result EnvCreateResponse
+	var result EnvResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode UpdateV2 response: %w", err)
 	}
 
-	return &result, nil
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to update environment: %s", result.Msg)
+	}
+
+	return &result.Data, nil
 }
 
 // EnvDestroy deletes browser environment
-func (c *Client) EnvDestroy(ctx context.Context, req *EnvReq) (*Response, error) {
+func (c *Client) EnvDestroy(ctx context.Context, req *EnvDelReq) error {
 	httpReq, err := c.newRequest(ctx, "POST", "/api/v2/browser/destroy", req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Destroy request: %w", err)
+		return fmt.Errorf("failed to create Destroy request: %w", err)
 	}
 
 	resp, err := c.do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("Destroy request failed: %w", err)
+		return fmt.Errorf("Destroy request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Destroy request failed with status: %d", resp.StatusCode)
-	}
-
 	var result Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode Destroy response: %w", err)
+		return fmt.Errorf("failed to decode Destroy response: %w", err)
 	}
 
-	return &result, nil
+	if result.Code != 200 {
+		return fmt.Errorf("Destroy request failed with code: %s", result.Msg)
+	}
+
+	return nil
 }
 
 // GetEnvPage gets paginated browser environments
-func (c *Client) GetEnvPage(ctx context.Context, req *GetEnvPageReq) (*PageResp, error) {
+func (c *Client) GetEnvPage(ctx context.Context, req *GetEnvPageReq) (*Page, error) {
 	httpReq, err := c.newRequest(ctx, "POST", "/api/v2/browser/page", req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PageV2 request: %w", err)
@@ -252,14 +255,14 @@ func (c *Client) GetEnvPage(ctx context.Context, req *GetEnvPageReq) (*PageResp,
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("PageV2 request failed with status: %d", resp.StatusCode)
-	}
-
 	var result PageResp
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode PageV2 response: %w", err)
 	}
 
-	return &result, nil
+	if result.Code != 200 {
+		return nil, fmt.Errorf("PageV2 request failed with code: %s", result.Msg)
+	}
+
+	return &result.Data, nil
 }

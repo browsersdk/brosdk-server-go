@@ -133,7 +133,7 @@ fmt.Printf("过期时间: %d\n", resp.Data.ExpireTime)
 创建新的浏览器环境配置：
 
 ```go
-req := &brosdk.EnvCreateRequest{
+req := &brosdk.EnvRequest{
     CustomerId:      "customer123",
     EnvName:         "我的浏览器环境",
     UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -161,7 +161,7 @@ fmt.Printf("创建的环境ID: %d\n", resp.Data.EnvId)
 更新现有的浏览器环境：
 
 ```go
-req := &brosdk.EnvCreateRequest{
+req := &brosdk.EnvRequest{
     EnvId:      123,
     CustomerId: "customer123",
     EnvName:    "更新的环境名称",
