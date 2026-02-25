@@ -134,7 +134,7 @@ fmt.Printf("Expires: %d\n", resp.Data.ExpireTime)
 Create a new browser environment configuration:
 
 ```go
-req := &brosdk.EnvCreateRequest{
+req := &brosdk.EnvRequest{
     CustomerId:      "customer123",
     EnvName:         "My Browser Environment",
     UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -162,7 +162,7 @@ fmt.Printf("Created Environment ID: %d\n", resp.Data.EnvId)
 Update an existing browser environment:
 
 ```go
-req := &brosdk.EnvCreateRequest{
+req := &brosdk.EnvRequest{
     EnvId:      123,
     CustomerId: "customer123",
     EnvName:    "Updated Environment Name",

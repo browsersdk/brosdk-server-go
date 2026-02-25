@@ -9,14 +9,17 @@ import (
 	"github.com/browsersdk/brosdk-server-go"
 )
 
+var apiKey = "5Ij4QwXjzEGsMCtEmxUs6hI4nectJeeYhhkdchpMZD0cgmGnQLtvQoLXoVZJ1TQg"
+
 func main() {
+
 	// Initialize client
-	client, err := brosdk.NewClient("your-api-key-here")
+	client, err := brosdk.NewClient(apiKey, brosdk.WithEndpoint("http://192.168.0.188:9988"))
 	if err != nil {
 		log.Fatal("Failed to create client:", err)
 	}
 
-	fmt.Println("=== Browser Open SDK Examples ===\n")
+	fmt.Println("=== Browser Open SDK Examples ===")
 
 	// Example 1: Get User Signature
 	if err := getUserSignatureExample(client); err != nil {
@@ -36,10 +39,10 @@ func main() {
 
 func getUserSignatureExample(client *brosdk.Client) error {
 	fmt.Println("1. Getting User Signature...")
-	
+
 	req := &brosdk.GetUserSigRequest{
 		CustomerId: "demo-customer",
-		Duration:   3600, // 1 hour
+		Duration:   3600 * 24, // 1 hour
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -50,24 +53,23 @@ func getUserSignatureExample(client *brosdk.Client) error {
 		return fmt.Errorf("failed to get user signature: %w", err)
 	}
 
-	fmt.Printf("   ✓ Success! UserSig: %s\n", resp.Data.UserSig)
-	fmt.Printf("   ✓ Expires at: %d\n", resp.Data.ExpireTime)
-	fmt.Printf("   ✓ Request ID: %s\n\n", resp.ReqId)
-	
+	fmt.Printf("   ✓ Success! UserSig: %s\n", resp.UserSig)
+	fmt.Printf("   ✓ Expires at: %d\n", resp.ExpireTime)
+
 	return nil
 }
 
 func createEnvironmentExample(client *brosdk.Client) error {
 	fmt.Println("2. Creating Browser Environment...")
-	
-	req := &brosdk.EnvCreateRequest{
+
+	req := &brosdk.EnvInfo{
 		CustomerId:      "demo-customer",
 		EnvName:         "Demo Browser Environment",
-		UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+		UserAgent:       "",
 		System:          "Windows 10",
 		Kernel:          "Chrome",
-		KernelVersion:   "120.0.0.0",
-		DPI:             "96",
+		KernelVersion:   "134",
+		Dpi:             "96",
 		DeviceName:      "Demo PC",
 		Mac:             "00:11:22:33:44:55",
 		PublicIp:        "192.168.1.100",
@@ -82,7 +84,7 @@ func createEnvironmentExample(client *brosdk.Client) error {
 			Latitude:  "39.9042",
 			Longitude: "116.4074",
 			Accuracy:  "high",
-			Useip:     1,
+			UseIP:     1,
 		},
 		FontList: []string{
 			"Arial", "Helvetica", "Times New Roman", "Courier New",
@@ -99,16 +101,15 @@ func createEnvironmentExample(client *brosdk.Client) error {
 		return fmt.Errorf("failed to create environment: %w", err)
 	}
 
-	fmt.Printf("   ✓ Success! Environment ID: %d\n", resp.Data.EnvId)
-	fmt.Printf("   ✓ Environment Name: %s\n", resp.Data.EnvName)
-	fmt.Printf("   ✓ Request ID: %s\n\n", resp.ReqId)
-	
+	fmt.Printf("   ✓ Success! Environment ID: %d\n", resp.EnvId)
+	fmt.Printf("   ✓ Environment Name: %s\n", resp.EnvName)
+
 	return nil
 }
 
 func listEnvironmentsExample(client *brosdk.Client) error {
 	fmt.Println("3. Listing Browser Environments...")
-	
+
 	req := &brosdk.GetEnvPageReq{
 		ReqPage: brosdk.ReqPage{
 			Page:     1,
@@ -126,16 +127,15 @@ func listEnvironmentsExample(client *brosdk.Client) error {
 	}
 
 	fmt.Printf("   ✓ Success! Total environments: %d\n", resp.Total)
-	fmt.Printf("   ✓ Retrieved %d environments\n", len(resp.Data))
-	fmt.Printf("   ✓ Request ID: %s\n\n", resp.ReqId)
-	
-	if len(resp.Data) > 0 {
+	fmt.Printf("   ✓ Retrieved %d environments\n", len(resp.List))
+
+	if len(resp.List) > 0 {
 		fmt.Println("   Environment Details:")
-		for i, env := range resp.Data {
-			fmt.Printf("     %d. ID: %d, Name: %s, Created: %s\n", 
-				i+1, env.EnvId, env.EnvName, env.CreatedAt)
+		for i, env := range resp.List {
+			fmt.Printf("     %d. ID: %d, Name: %s\n",
+				i+1, env.EnvId, env.EnvName)
 		}
 	}
-	
+
 	return nil
 }
