@@ -210,6 +210,7 @@ func (c *Client) EnvUpdate(ctx context.Context, req *EnvInfo) (*EnvInfo, error) 
 		return nil, fmt.Errorf("failed to decode UpdateV2 response: %w", err)
 	}
 
+	fmt.Printf("UpdateV2 response: %+v\n", result)
 	if result.Code != 200 {
 		return nil, fmt.Errorf("failed to update environment: %s", result.Msg)
 	}

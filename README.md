@@ -163,7 +163,7 @@ Update an existing browser environment:
 
 ```go
 req := &brosdk.EnvRequest{
-    EnvId:      123,
+    EnvId:      "123",
     CustomerId: "customer123",
     EnvName:    "Updated Environment Name",
     // Update other fields as needed...
@@ -181,7 +181,7 @@ Delete a browser environment:
 
 ```go
 req := &brosdk.EnvReq{
-    EnvId: 123,
+    EnvId: "123",
 }
 
 resp, err := client.EnvDestroy(context.Background(), req)
