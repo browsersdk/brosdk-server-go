@@ -369,7 +369,7 @@ func TestClient_EnvCreate_Success(t *testing.T) {
 			responseBody := `{
 				"code": 0,
 				"data": {
-					"envId": 123,
+					"envId": "123",
 					"envName": "Test Environment",
 					"customerId": "test-customer"
 				},
@@ -402,7 +402,7 @@ func TestClient_EnvCreate_Success(t *testing.T) {
 		t.Fatalf("EnvCreate() error = %v", err)
 	}
 
-	if resp.EnvId != 123 {
+	if resp.EnvId != "123" {
 		t.Errorf("EnvCreate() envId = %v, want 123", resp.EnvId)
 	}
 
@@ -419,9 +419,9 @@ func TestClient_EnvUpdate_Success(t *testing.T) {
 			}
 
 			responseBody := `{
-				"code": 0,
+				"code": 200,
 				"data": {
-					"envId": 456,
+					"envId": "456",
 					"envName": "Updated Environment"
 				},
 				"msg": "success",
@@ -443,7 +443,7 @@ func TestClient_EnvUpdate_Success(t *testing.T) {
 	}
 
 	req := &EnvInfo{
-		EnvId:      456,
+		EnvId:      "456",
 		CustomerId: "test-customer",
 		EnvName:    "Updated Environment",
 	}
@@ -453,7 +453,7 @@ func TestClient_EnvUpdate_Success(t *testing.T) {
 		t.Fatalf("EnvUpdate() error = %v", err)
 	}
 
-	if resp.EnvId > 0 {
+	if resp.EnvId != "456" {
 		t.Errorf("EnvUpdate() envId = %v, want 456", resp.EnvId)
 	}
 
@@ -487,7 +487,7 @@ func TestClient_EnvDestroy_Success(t *testing.T) {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 
-	req := &EnvDelReq{EnvId: 789}
+	req := &EnvDelReq{EnvId: "789"}
 
 	err = client.EnvDestroy(context.Background(), req)
 	if err != nil {
@@ -506,14 +506,14 @@ func TestClient_GetEnvPage_Success(t *testing.T) {
 				"code": 0,
 				"data": [
 					{
-						"envId": 1,
+						"envId": "1",
 						"customerId": "customer1",
 						"envName": "Environment 1",
 						"createdAt": "2023-01-01T00:00:00Z",
 						"updatedAt": "2023-01-01T00:00:00Z"
 					},
 					{
-						"envId": 2,
+						"envId": "2",
 						"customerId": "customer1",
 						"envName": "Environment 2",
 						"createdAt": "2023-01-02T00:00:00Z",

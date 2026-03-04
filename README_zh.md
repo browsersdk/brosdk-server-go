@@ -162,7 +162,7 @@ fmt.Printf("创建的环境ID: %d\n", resp.Data.EnvId)
 
 ```go
 req := &brosdk.EnvRequest{
-    EnvId:      123,
+    EnvId:      "123",
     CustomerId: "customer123",
     EnvName:    "更新的环境名称",
     // 根据需要更新其他字段...

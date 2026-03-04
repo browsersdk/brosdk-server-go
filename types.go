@@ -39,7 +39,7 @@ type Geographic struct {
 
 // EnvRequest represents the request parameters for EnvCreate
 type EnvInfo struct {
-	EnvId           uint64     `json:"envId" form:"envId"`
+	EnvId           string     `json:"envId" form:"envId"`
 	System          string     `json:"system" form:"system"`               //
 	UaVersion       string     `json:"uaVersion" form:"uaVersion"`         //
 	PublicIp        string     `json:"publicIp" form:"publicIp"`           //
@@ -93,7 +93,7 @@ type EnvResponse struct {
 
 // EnvReq represents the request parameters for destroy operation
 type EnvDelReq struct {
-	EnvId int64 `json:"envId" form:"envId"` //
+	EnvId string `json:"envId" form:"envId"` //
 }
 
 // ReqPage represents pagination request parameters
@@ -107,7 +107,7 @@ type GetEnvPageReq struct {
 	ReqPage `query:"-"`
 
 	SortOrder  string   `json:"-" query:"type:order;column:id"`
-	EnvIds     []uint64 `json:"envIds" form:"envIds"`         //主键集合
+	EnvIds     []string `json:"envIds" form:"envIds"`         //主键集合
 	CustomerId string   `json:"customerId" form:"customerId"` //客户ID
 }
 
