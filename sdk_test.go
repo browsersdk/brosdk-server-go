@@ -367,7 +367,7 @@ func TestClient_EnvCreate_Success(t *testing.T) {
 			}
 
 			responseBody := `{
-				"code": 0,
+				"code": 200,
 				"data": {
 					"envId": "123",
 					"envName": "Test Environment",
@@ -394,7 +394,9 @@ func TestClient_EnvCreate_Success(t *testing.T) {
 	req := &EnvInfo{
 		CustomerId: "test-customer",
 		EnvName:    "Test Environment",
-		UserAgent:  "test-user-agent",
+		Finger: Finger{
+			Ua: "test-user-agent",
+		},
 	}
 
 	resp, err := client.EnvCreate(context.Background(), req)
