@@ -267,3 +267,29 @@ func (c *Client) GetEnvPage(ctx context.Context, req *GetEnvPageReq) (*Page, err
 
 	return &result.Data, nil
 }
+
+// GetUiFingerList
+func (c *Client) GetUiFingerList(ctx context.Context) (*GetUiFingerList, error) {
+	httpReq, err := c.newRequest(ctx, "GET", "/api/v2/browser/getUiFingerList", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GetUserSig request: %w", err)
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("GetUserSig request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var result GetUiFingerListResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		fmt.Printf("GetUiFingerList response: %+v\n", resp.Body)
+		return nil, fmt.Errorf("failed to decode GetUserSig response: %w", err)
+	}
+
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to get user signature: %s", result.Msg)
+	}
+
+	return &result.Data, nil
+}
