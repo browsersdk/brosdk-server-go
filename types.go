@@ -189,18 +189,19 @@ type CONAB struct {
 }
 
 type GetUiFingerList struct {
-	ChromeKernelversion  []KernelVersionInfo `json:"chromeKernelVersion"`  //支持的浏览器内核大版本
-	FirefoxKernelversion []KernelVersionInfo `json:"firefoxKernelversion"` //支持的浏览器火狐内核大版本
-	System               SYSTEMKERNEL        `json:"system"`               //操作系统版本
-	ChromeUAversion      []string            `json:"chromeUAversion"`      //浏览器UA版本
-	FirefoxUAversion     []string            `json:"firefoxUAversion"`     //火狐浏览器UA版本
-	Language             []CONAB             `json:"language"`             //语言
-	Zone                 []string            `json:"zone"`                 //时区
-	Dpi                  any                 `json:"dpi"`                  //屏幕分辨率
-	Webgl                any                 `json:"webgl"`                //webgl
-	Cpu                  any                 `json:"cpu"`                  //CPU参数
-	Mem                  any                 `json:"mem"`                  //内存参数
-	Region               any                 `json:"region"`               //Region
+	ChromeKernelversion   []KernelVersionInfo `json:"chromeKernelVersion"`   //支持的浏览器内核大版本
+	FirefoxKernelversion  []KernelVersionInfo `json:"firefoxKernelversion"`  //支持的浏览器火狐内核大版本
+	System                SYSTEMKERNEL        `json:"system"`                //操作系统版本
+	ChromeUAversion       []string            `json:"chromeUAversion"`       //浏览器UA版本
+	FirefoxUAversion      []string            `json:"firefoxUAversion"`      //火狐浏览器UA版本
+	Language              []CONAB             `json:"language"`              //语言
+	Zone                  []string            `json:"zone"`                  //时区
+	Dpi                   any                 `json:"dpi"`                   //屏幕分辨率
+	Webgl                 any                 `json:"webgl"`                 //webgl
+	Cpu                   any                 `json:"cpu"`                   //CPU参数
+	Mem                   any                 `json:"mem"`                   //内存参数
+	Region                any                 `json:"region"`                //Region
+	PlatformKernelversion any                 `json:"platformKernelversion"` //平台可用的内核
 }
 
 type GetUiFingerListResponse struct {
