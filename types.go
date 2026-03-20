@@ -183,7 +183,7 @@ type CONAB struct {
 	Province string `json:"province"` //省
 	AB       string `json:"ab"`       //简写
 	ECountry string `json:"ecountry"` //国家英文名
-	must     int    //是不是这个国家的必须语言 1是 0不是
+	Must     int    `json:"must"` //是不是这个国家的必须语言 1是 0不是
 	Name     string `json:"name"`
 	Code     string `json:"code"`
 }

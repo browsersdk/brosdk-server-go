@@ -12,6 +12,7 @@ A comprehensive Go SDK for interacting with the Browser Open API service, provid
 
 - **🔐 Secure Authentication**: Built-in API key authentication with Bearer token support
 - **🌐 Flexible Configuration**: Customizable endpoints, timeouts, and HTTP clients
+- **🔍 Debug Mode**: Built-in structured logging for request/response debugging
 - **⚡ Type-Safe Operations**: Strongly typed request/response structures
 - **🔧 Modular Design**: Clean separation of concerns across multiple components
 - **🧪 Comprehensive Testing**: Full test coverage with mocking capabilities
@@ -78,6 +79,38 @@ if err != nil {
 }
 ```
 
+### Debug Mode
+
+Enable debug mode to log all HTTP requests and responses:
+
+```go
+// Enable debug mode (logs to stderr by default)
+client, err := brosdk.NewClient("your-api-key-here",
+    brosdk.WithDebug(true),
+)
+
+// Enable debug mode with custom logger
+import "log"
+
+logger := log.New(os.Stdout, "[brosdk] ", log.LstdFlags)
+client, err := brosdk.NewClient("your-api-key-here",
+    brosdk.WithDebug(true),
+    brosdk.WithLogger(logger),
+)
+
+// Example debug output:
+// [brosdk] 2026/03/20 12:00:00 → POST /api/v2/browser/create  body={"envId":"...","finger":{...}}
+// [brosdk] 2026/03/20 12:00:00 ← POST /api/v2/browser/create  elapsed=123ms  http_status=200  body={"code":200,"data":{...}}
+```
+
+Debug mode helps you troubleshoot API issues by logging:
+- Request method and URL path
+- Request body (JSON)
+- Response HTTP status code
+- Response body (JSON)
+- Request duration/elapsed time
+- Error details (if any)
+
 ## 🧪 Running Tests
 
 The SDK includes comprehensive test coverage. Run tests with:
@@ -134,19 +167,18 @@ fmt.Printf("Expires: %d\n", resp.Data.ExpireTime)
 Create a new browser environment configuration:
 
 ```go
-req := &brosdk.EnvRequest{
-    CustomerId:      "customer123",
-    EnvName:         "My Browser Environment",
-    UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    System:          "Windows 10",
-    Kernel:          "Chrome",
-    KernelVersion:   "120.0.0.0",
-    EnableCookie:    1,
-    Enablenotice:    1,
-    Enableopen:      1,
-    Enablepic:       1,
-    IgnoreCookieErr: 0,
-    // Add other required fields...
+req := &brosdk.EnvInfo{
+    CustomerId:  "customer123",
+    EnvName:     "My Browser Environment",
+    Serial:      "001",
+    Finger: brosdk.Finger{
+        System:        "Windows",
+        Kernel:        "Chrome",
+        KernelVersion: "120.0.0.0",
+        UaVersion:     "120",
+        Language:      []string{"zh-CN"},
+        Zone:          "Asia/Shanghai",
+    },
 }
 
 resp, err := client.EnvCreate(context.Background(), req)
@@ -154,7 +186,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-fmt.Printf("Created Environment ID: %d\n", resp.Data.EnvId)
+fmt.Printf("Created Environment ID: %s\n", resp.EnvId)
 ```
 
 ### 🔄 EnvUpdate - Update Environment (v2)
@@ -162,10 +194,15 @@ fmt.Printf("Created Environment ID: %d\n", resp.Data.EnvId)
 Update an existing browser environment:
 
 ```go
-req := &brosdk.EnvRequest{
+req := &brosdk.EnvInfo{
     EnvId:      "123",
     CustomerId: "customer123",
     EnvName:    "Updated Environment Name",
+    Finger: brosdk.Finger{
+        System:        "Windows",
+        Kernel:        "Chrome",
+        KernelVersion: "120.0.0.0",
+    },
     // Update other fields as needed...
 }
 
@@ -180,16 +217,14 @@ if err != nil {
 Delete a browser environment:
 
 ```go
-req := &brosdk.EnvReq{
+req := &brosdk.EnvDelReq{
     EnvId: "123",
 }
 
-resp, err := client.EnvDestroy(context.Background(), req)
+err := client.EnvDestroy(context.Background(), req)
 if err != nil {
     log.Fatal(err)
 }
-
-fmt.Printf("Deletion result: %s\n", resp.Msg)
 ```
 
 ### 📋 GetEnvPage - List Environments (v2)
@@ -203,7 +238,7 @@ req := &brosdk.GetEnvPageReq{
         PageSize: 20,
     },
     CustomerId: "customer123",
-    EnvIds:     []uint64{1, 2, 3}, // Optional filtering
+    EnvIds:     []string{"1", "2", "3"}, // Optional filtering
 }
 
 resp, err := client.GetEnvPage(context.Background(), req)
@@ -212,9 +247,8 @@ if err != nil {
 }
 
 fmt.Printf("Total environments: %d\n", resp.Total)
-for _, env := range resp.Data {
-    fmt.Printf("ID: %d, Name: %s, Created: %s\n", 
-        env.EnvId, env.EnvName, env.CreatedAt)
+for _, env := range resp.List {
+    fmt.Printf("ID: %s, Name: %s\n", env.EnvId, env.EnvName)
 }
 ```
 
@@ -223,7 +257,7 @@ for _, env := range resp.Data {
 ### Custom Endpoint
 
 ```go
-client, err := brosdk.NewClient("api-key", 
+client, err := brosdk.NewClient("api-key",
     brosdk.WithEndpoint("https://your-custom-endpoint.com"))
 ```
 
@@ -243,6 +277,22 @@ customClient := &http.Client{
 }
 client, err := brosdk.NewClient("api-key",
     brosdk.WithHTTPClient(customClient))
+```
+
+### Debug Mode
+
+```go
+// Enable debug logging
+client, err := brosdk.NewClient("api-key",
+    brosdk.WithDebug(true),
+)
+
+// Custom logger for debug output
+logger := log.New(os.Stdout, "[brosdk] ", log.LstdFlags)
+client, err := brosdk.NewClient("api-key",
+    brosdk.WithDebug(true),
+    brosdk.WithLogger(logger),
+)
 ```
 
 ## 🛡️ Error Handling
@@ -339,6 +389,15 @@ For issues, questions, or contributions:
 - 📧 Email: support@browsersdk.com
 
 ## 📈 Changelog
+
+### v1.1.0
+- ✨ Add debug mode with structured logging
+- ✨ Add `WithDebug()` option to enable/disable debug logging
+- ✨ Add `WithLogger()` option for custom log output
+- 🐛 Fix incorrect error messages in `GetUiFingerList`
+- 🐛 Fix missing JSON tag on `CONAB.Must` field
+- 🐛 Remove leftover debug `fmt.Printf` statements
+- 🧪 Add comprehensive debug mode tests
 
 ### v1.0.0
 - Initial release
