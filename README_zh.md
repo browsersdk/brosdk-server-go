@@ -10,6 +10,7 @@ Browser Open SDK 是一个功能完整的 Go 语言 SDK，用于与 Browser Open
 
 - **🔐 安全认证**: 内置 API 密钥认证，支持 Bearer token
 - **🌐 灵活配置**: 可自定义端点、超时时间和 HTTP 客户端
+- **🔍 Debug 模式**: 内置结构化日志，便于请求/响应调试
 - **⚡ 类型安全**: 强类型的请求/响应结构
 - **🔧 模块化设计**: 组件间职责清晰分离
 - **🧪 全面测试**: 完整的测试覆盖和模拟能力
@@ -76,6 +77,38 @@ if err != nil {
 }
 ```
 
+### Debug 模式
+
+启用 Debug 模式可以记录所有 HTTP 请求和响应：
+
+```go
+// 启用 debug 模式（默认输出到 stderr）
+client, err := brosdk.NewClient("your-api-key-here",
+    brosdk.WithDebug(true),
+)
+
+// 启用 debug 模式并使用自定义日志记录器
+import "log"
+
+logger := log.New(os.Stdout, "[brosdk] ", log.LstdFlags)
+client, err := brosdk.NewClient("your-api-key-here",
+    brosdk.WithDebug(true),
+    brosdk.WithLogger(logger),
+)
+
+// 示例 debug 输出：
+// [brosdk] 2026/03/20 12:00:00 → POST /api/v2/browser/create  body={"envId":"...","finger":{...}}
+// [brosdk] 2026/03/20 12:00:00 ← POST /api/v2/browser/create  elapsed=123ms  http_status=200  body={"code":200,"data":{...}}
+```
+
+Debug 模式帮助您排查 API 问题，记录内容包含：
+- 请求方法和 URL 路径
+- 请求体（JSON）
+- 响应 HTTP 状态码
+- 响应体（JSON）
+- 请求耗时
+- 错误详情（如果有）
+
 ## 🧪 运行测试
 
 SDK 包含全面的测试覆盖。运行测试：
@@ -133,19 +166,18 @@ fmt.Printf("过期时间: %d\n", resp.Data.ExpireTime)
 创建新的浏览器环境配置：
 
 ```go
-req := &brosdk.EnvRequest{
-    CustomerId:      "customer123",
-    EnvName:         "我的浏览器环境",
-    UserAgent:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    System:          "Windows 10",
-    Kernel:          "Chrome",
-    KernelVersion:   "120.0.0.0",
-    EnableCookie:    1,
-    Enablenotice:    1,
-    Enableopen:      1,
-    Enablepic:       1,
-    IgnoreCookieErr: 0,
-    // 添加其他必要字段...
+req := &brosdk.EnvInfo{
+    CustomerId:  "customer123",
+    EnvName:     "我的浏览器环境",
+    Serial:      "001",
+    Finger: brosdk.Finger{
+        System:        "Windows",
+        Kernel:        "Chrome",
+        KernelVersion: "120.0.0.0",
+        UaVersion:     "120",
+        Language:      []string{"zh-CN"},
+        Zone:          "Asia/Shanghai",
+    },
 }
 
 resp, err := client.EnvCreate(context.Background(), req)
@@ -153,7 +185,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-fmt.Printf("创建的环境ID: %d\n", resp.Data.EnvId)
+fmt.Printf("创建的环境ID: %s\n", resp.EnvId)
 ```
 
 ### 🔄 EnvUpdate - 更新环境 (v2)
@@ -161,10 +193,15 @@ fmt.Printf("创建的环境ID: %d\n", resp.Data.EnvId)
 更新现有的浏览器环境：
 
 ```go
-req := &brosdk.EnvRequest{
+req := &brosdk.EnvInfo{
     EnvId:      "123",
     CustomerId: "customer123",
     EnvName:    "更新的环境名称",
+    Finger: brosdk.Finger{
+        System:        "Windows",
+        Kernel:        "Chrome",
+        KernelVersion: "120.0.0.0",
+    },
     // 根据需要更新其他字段...
 }
 
@@ -179,16 +216,14 @@ if err != nil {
 删除浏览器环境：
 
 ```go
-req := &brosdk.EnvReq{
-    EnvId: 123,
+req := &brosdk.EnvDelReq{
+    EnvId: "123",
 }
 
-resp, err := client.EnvDestroy(context.Background(), req)
+err := client.EnvDestroy(context.Background(), req)
 if err != nil {
     log.Fatal(err)
 }
-
-fmt.Printf("删除结果: %s\n", resp.Msg)
 ```
 
 ### 📋 GetEnvPage - 列出环境 (v2)
@@ -202,7 +237,7 @@ req := &brosdk.GetEnvPageReq{
         PageSize: 20,
     },
     CustomerId: "customer123",
-    EnvIds:     []uint64{1, 2, 3}, // 可选过滤
+    EnvIds:     []string{"1", "2", "3"}, // 可选过滤
 }
 
 resp, err := client.GetEnvPage(context.Background(), req)
@@ -211,9 +246,8 @@ if err != nil {
 }
 
 fmt.Printf("环境总数: %d\n", resp.Total)
-for _, env := range resp.Data {
-    fmt.Printf("ID: %d, 名称: %s, 创建时间: %s\n", 
-        env.EnvId, env.EnvName, env.CreatedAt)
+for _, env := range resp.List {
+    fmt.Printf("ID: %s, 名称: %s\n", env.EnvId, env.EnvName)
 }
 ```
 
@@ -222,7 +256,7 @@ for _, env := range resp.Data {
 ### 自定义端点
 
 ```go
-client, err := brosdk.NewClient("api-key", 
+client, err := brosdk.NewClient("api-key",
     brosdk.WithEndpoint("https://your-custom-endpoint.com"))
 ```
 
@@ -242,6 +276,22 @@ customClient := &http.Client{
 }
 client, err := brosdk.NewClient("api-key",
     brosdk.WithHTTPClient(customClient))
+```
+
+### Debug 模式
+
+```go
+// 启用 debug 日志
+client, err := brosdk.NewClient("api-key",
+    brosdk.WithDebug(true),
+)
+
+// 自定义日志输出目标
+logger := log.New(os.Stdout, "[brosdk] ", log.LstdFlags)
+client, err := brosdk.NewClient("api-key",
+    brosdk.WithDebug(true),
+    brosdk.WithLogger(logger),
+)
 ```
 
 ## 🛡️ 错误处理
@@ -338,6 +388,15 @@ golangci-lint run
 - 📧 邮箱: support@browsersdk.com
 
 ## 📈 更新日志
+
+### v1.1.0
+- ✨ 新增 debug 模式，支持结构化日志
+- ✨ 新增 `WithDebug()` 选项用于开启/关闭调试日志
+- ✨ 新增 `WithLogger()` 选项用于自定义日志输出
+- 🐛 修复 `GetUiFingerList` 中错误的错误消息
+- 🐛 修复 `CONAB.Must` 字段缺失的 JSON tag
+- 🐛 移除遗留的调试 `fmt.Printf` 语句
+- 🧪 新增全面的 debug 模式测试
 
 ### v1.0.0
 - 初始发布

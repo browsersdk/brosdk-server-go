@@ -1,9 +1,11 @@
 package brosdk
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"testing"
@@ -52,6 +54,12 @@ func TestNewClient(t *testing.T) {
 			name:    "with custom http client",
 			apiKey:  "test-key",
 			opts:    []ClientOption{WithHTTPClient(&http.Client{Timeout: 5 * time.Second})},
+			wantErr: false,
+		},
+		{
+			name:    "with debug enabled",
+			apiKey:  "test-key",
+			opts:    []ClientOption{WithDebug(true)},
 			wantErr: false,
 		},
 	}
@@ -155,7 +163,7 @@ func TestClient_newRequest(t *testing.T) {
 	ctx := context.Background()
 	body := &GetUserSigRequest{CustomerId: "test", Duration: 3600}
 
-	req, err := client.newRequest(ctx, "POST", "/test", body)
+	req, rawBody, err := client.newRequest(ctx, "POST", "/test", body)
 	if err != nil {
 		t.Fatalf("newRequest() error = %v", err)
 	}
@@ -191,7 +199,16 @@ func TestClient_newRequest(t *testing.T) {
 		t.Error("newRequest() context not set correctly")
 	}
 
-	// Test body content
+	// Verify rawBody is valid JSON
+	var parsedFromRaw GetUserSigRequest
+	if err := json.Unmarshal(rawBody, &parsedFromRaw); err != nil {
+		t.Fatalf("newRequest() rawBody is not valid JSON: %v", err)
+	}
+	if parsedFromRaw.CustomerId != "test" || parsedFromRaw.Duration != 3600 {
+		t.Errorf("newRequest() rawBody = %+v, want CustomerId=test, Duration=3600", parsedFromRaw)
+	}
+
+	// Test body content from request
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		t.Fatalf("Failed to read request body: %v", err)
@@ -213,7 +230,7 @@ func TestClient_newRequest_NoBody(t *testing.T) {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 
-	req, err := client.newRequest(context.Background(), "GET", "/test", nil)
+	req, rawBody, err := client.newRequest(context.Background(), "GET", "/test", nil)
 	if err != nil {
 		t.Fatalf("newRequest() error = %v", err)
 	}
@@ -221,20 +238,24 @@ func TestClient_newRequest_NoBody(t *testing.T) {
 	if req.Body != nil {
 		t.Error("newRequest() with nil body should have nil Body")
 	}
+
+	if rawBody != nil {
+		t.Error("newRequest() with nil body should return nil rawBody")
+	}
 }
 
 func TestClient_GetUserSig_Success(t *testing.T) {
 	// Mock HTTP client
 	mockTransport := &MockRoundTripper{
 		RoundTripFunc: func(req *http.Request) (*http.Response, error) {
-			// Verify request
-			if req.URL.Path != "/api/usersig" {
-				t.Errorf("Expected path /api/usersig, got %s", req.URL.Path)
+			// Verify request path
+			if req.URL.Path != "/api/v2/browser/getUserSig" {
+				t.Errorf("Expected path /api/v2/browser/getUserSig, got %s", req.URL.Path)
 			}
 
 			// Return mock response
 			responseBody := `{
-				"code": 0,
+				"code": 200,
 				"data": {
 					"expireTime": 1234567890,
 					"userSig": "test-sig"
@@ -325,8 +346,8 @@ func TestClient_GetUserSig_NonOKStatus(t *testing.T) {
 		t.Error("GetUserSig() should return error for non-200 status")
 	}
 
-	if !strings.Contains(err.Error(), "status: 400") {
-		t.Errorf("GetUserSig() error = %v, want error containing 'status: 400'", err)
+	if !strings.Contains(err.Error(), "non-OK HTTP status") {
+		t.Errorf("GetUserSig() error = %v, want error containing 'non-OK HTTP status'", err)
 	}
 }
 
@@ -362,8 +383,8 @@ func TestClient_GetUserSig_InvalidJSON(t *testing.T) {
 func TestClient_EnvCreate_Success(t *testing.T) {
 	mockTransport := &MockRoundTripper{
 		RoundTripFunc: func(req *http.Request) (*http.Response, error) {
-			if req.URL.Path != "/api/env" {
-				t.Errorf("Expected path /api/env, got %s", req.URL.Path)
+			if req.URL.Path != "/api/v2/browser/create" {
+				t.Errorf("Expected path /api/v2/browser/create, got %s", req.URL.Path)
 			}
 
 			responseBody := `{
@@ -469,7 +490,7 @@ func TestClient_EnvDestroy_Success(t *testing.T) {
 			}
 
 			responseBody := `{
-				"code": 0,
+				"code": 200,
 				"data": null,
 				"msg": "Environment destroyed successfully",
 				"reqId": "test-req-id"
@@ -505,23 +526,24 @@ func TestClient_GetEnvPage_Success(t *testing.T) {
 			}
 
 			responseBody := `{
-				"code": 0,
-				"data": [
-					{
-						"envId": "1",
-						"customerId": "customer1",
-						"envName": "Environment 1",
-						"createdAt": "2023-01-01T00:00:00Z",
-						"updatedAt": "2023-01-01T00:00:00Z"
-					},
-					{
-						"envId": "2",
-						"customerId": "customer1",
-						"envName": "Environment 2",
-						"createdAt": "2023-01-02T00:00:00Z",
-						"updatedAt": "2023-01-02T00:00:00Z"
-					}
-				],
+				"code": 200,
+				"data": {
+					"list": [
+						{
+							"envId": "1",
+							"customerId": "customer1",
+							"envName": "Environment 1"
+						},
+						{
+							"envId": "2",
+							"customerId": "customer1",
+							"envName": "Environment 2"
+						}
+					],
+					"total": 2,
+					"pageSize": 10,
+					"currentPage": 1
+				},
 				"msg": "success",
 				"reqId": "test-req-id",
 				"total": 2
@@ -570,6 +592,141 @@ type mockHTTPError struct {
 
 func (e *mockHTTPError) Error() string {
 	return e.message
+}
+
+func TestWithDebug(t *testing.T) {
+	client, err := NewClient("test-key", WithDebug(true))
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	if !client.debug {
+		t.Error("WithDebug(true) should set debug = true")
+	}
+
+	// Disable debug
+	opt := WithDebug(false)
+	opt(client)
+	if client.debug {
+		t.Error("WithDebug(false) should set debug = false")
+	}
+}
+
+func TestWithLogger(t *testing.T) {
+	var buf bytes.Buffer
+	customLogger := log.New(&buf, "[test] ", 0)
+
+	client, err := NewClient("test-key", WithDebug(true), WithLogger(customLogger))
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	if client.logger != customLogger {
+		t.Error("WithLogger() did not set the custom logger")
+	}
+
+	// Verify logger works
+	client.debugLog("hello %s", "world")
+	if !strings.Contains(buf.String(), "hello world") {
+		t.Errorf("WithLogger() logger output = %q, want to contain 'hello world'", buf.String())
+	}
+
+	// Test with nil logger (should not change)
+	opt := WithLogger(nil)
+	opt(client)
+	if client.logger != customLogger {
+		t.Error("WithLogger(nil) should not change existing logger")
+	}
+}
+
+func TestClient_DebugLogging(t *testing.T) {
+	var buf bytes.Buffer
+	customLogger := log.New(&buf, "", 0)
+
+	mockTransport := &MockRoundTripper{
+		RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+			responseBody := `{"code":200,"data":{"expireTime":1234567890,"userSig":"debug-sig"},"msg":"OK","reqId":"req-debug"}`
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader(responseBody)),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	client, err := NewClient("test-key",
+		WithDebug(true),
+		WithLogger(customLogger),
+		WithHTTPClient(&http.Client{Transport: mockTransport}),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	_, err = client.GetUserSig(context.Background(), &GetUserSigRequest{
+		CustomerId: "debug-customer",
+		Duration:   3600,
+	})
+	if err != nil {
+		t.Fatalf("GetUserSig() error = %v", err)
+	}
+
+	output := buf.String()
+
+	// Outgoing request log should contain method and path
+	if !strings.Contains(output, "POST") {
+		t.Errorf("debug log should contain 'POST', got: %s", output)
+	}
+	if !strings.Contains(output, "/api/v2/browser/getUserSig") {
+		t.Errorf("debug log should contain path, got: %s", output)
+	}
+
+	// Response log should contain status 200
+	if !strings.Contains(output, "200") {
+		t.Errorf("debug log should contain HTTP status '200', got: %s", output)
+	}
+
+	// Response log should contain elapsed time
+	if !strings.Contains(output, "elapsed=") {
+		t.Errorf("debug log should contain 'elapsed=', got: %s", output)
+	}
+}
+
+func TestClient_DebugLogging_Disabled(t *testing.T) {
+	var buf bytes.Buffer
+	customLogger := log.New(&buf, "", 0)
+
+	mockTransport := &MockRoundTripper{
+		RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+			responseBody := `{"code":200,"data":{"expireTime":1234567890,"userSig":"no-debug-sig"},"msg":"OK","reqId":"req-1"}`
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader(responseBody)),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	// Debug disabled (default)
+	client, err := NewClient("test-key",
+		WithLogger(customLogger),
+		WithHTTPClient(&http.Client{Transport: mockTransport}),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	_, err = client.GetUserSig(context.Background(), &GetUserSigRequest{
+		CustomerId: "test",
+		Duration:   3600,
+	})
+	if err != nil {
+		t.Fatalf("GetUserSig() error = %v", err)
+	}
+
+	if buf.Len() != 0 {
+		t.Errorf("debug logging disabled: expected no output, got: %s", buf.String())
+	}
 }
 
 func TestClient_GetUiFingerList_Success(t *testing.T) {
