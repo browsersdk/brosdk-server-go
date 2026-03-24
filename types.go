@@ -56,10 +56,8 @@ type EnvInfo struct {
 }
 
 type NextSystem struct { //次优优先级操作系统
-	Android string `json:"Android"`
-	MacOS   string `json:"MacOS"`
-	IOS     string `json:"IOS"`
-	Linux   string `json:"Linux"`
+	MacOS string `json:"MacOS"`
+	Linux string `json:"Linux"`
 }
 
 type Finger struct {
@@ -81,7 +79,7 @@ type Finger struct {
 	Canvas         int     `json:"canvas"`         //浏览器canvas指纹开关 4:倾向一致性 1:真实 2:倾向随机性 3关闭
 	WebGl          int     `json:"webGl"`          //浏览器webgl元数据指纹开关 1隐身 2真实（默认）
 	WebGlInfo      int     `json:"webGlInfo"`      //浏览器WebGlInfo 1:真实 2:自定义
-	WebGLVendor    string  `json:"webGlVendor"`    //浏览器WebGL厂商，Windows系统可选值为Google Inc. (NVIDIA)、Google Inc. (AMD)、Google Inc. (Intel)，MacOS系统可选值为Google Inc. (ATI Technologies Inc.)、Google Inc. (NVIDIA)、Google Inc. (Apple)，Android系统可选值为Qualcomm，IOS系统可选值为Apple Inc 自定义时传值，为空会自动生成
+	WebGLVendor    string  `json:"webGlVendor"`    //浏览器WebGL厂商，Windows系统可选值为Google Inc. (NVIDIA)、Google Inc. (AMD)、Google Inc. (Intel)，MacOS系统可选值为Google Inc. (ATI Technologies Inc.)、Google Inc. (NVIDIA)、Google Inc. (Apple)，为空会自动生成
 	WebGLRenderer  string  `json:"webGlRenderer"`  //浏览器WebGL渲染 自定义时传值，为空会自动生成，该字段不为空时webGLVendor必传
 	AudioContext   int     `json:"audioContext"`   //AudioContext 1隐身 2真实
 	SpeechVoices   int     `json:"speechVoices"`   //SpeechVoices指纹，1：每个浏览器使用当前电脑默认的SpeechVoices,真实 2：添加相应的噪音，同一电脑上为每个浏览器生成不同的SpeechVoices（默认）
@@ -172,9 +170,7 @@ type SYSDEVICE struct {
 // 操作系统和浏览器核关系
 type SYSTEMKERNEL struct {
 	Windows []SYSDEVICE `json:"Windows"`
-	Android []SYSDEVICE `json:"Android"`
 	MacOS   []SYSDEVICE `json:"MacOS"`
-	IOS     []SYSDEVICE `json:"IOS"`
 	Linux   []SYSDEVICE `json:"Linux"`
 }
 
@@ -183,7 +179,7 @@ type CONAB struct {
 	Province string `json:"province"` //省
 	AB       string `json:"ab"`       //简写
 	ECountry string `json:"ecountry"` //国家英文名
-	Must     int    `json:"must"` //是不是这个国家的必须语言 1是 0不是
+	Must     int    `json:"must"`     //是不是这个国家的必须语言 1是 0不是
 	Name     string `json:"name"`
 	Code     string `json:"code"`
 }
