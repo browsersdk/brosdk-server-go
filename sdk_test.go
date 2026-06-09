@@ -415,9 +415,6 @@ func TestClient_EnvCreate_Success(t *testing.T) {
 	req := &EnvInfo{
 		CustomerId: "test-customer",
 		EnvName:    "Test Environment",
-		Finger: Finger{
-			Ua: "test-user-agent",
-		},
 	}
 
 	resp, err := client.EnvCreate(context.Background(), req)

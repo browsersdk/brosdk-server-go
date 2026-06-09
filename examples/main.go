@@ -69,28 +69,6 @@ func createEnvironmentExample(client *brosdk.Client) error {
 			System:        "Windows 10",
 			Kernel:        "Chrome",
 			KernelVersion: "134",
-			Ua:            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
-			Dpi:           "96",
-			DeviceName:    "Demo PC",
-			Mac:           "00:11:22:33:44:55",
-			Zone:          "UTC",
-			EnableNotice:  1,
-			EnableOpen:    1,
-			EnablePic:     1,
-			Geographic: brosdk.Geographic{
-				Enable:    1,
-				Latitude:  "39.9042",
-				Longitude: "116.4074",
-				Accuracy:  "high",
-			},
-			Font: brosdk.Font{
-				Enable: 2,
-				List: []string{
-					"Arial", "Helvetica", "Times New Roman", "Courier New",
-				},
-			},
-			Language: []string{"en-US", "zh-CN"},
-			ScanPort: "8080",
 		},
 	}
 
