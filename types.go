@@ -57,9 +57,40 @@ type EnvInfo struct {
 	Finger        Finger `json:"finger,omitempty" form:"finger"`
 }
 
-type NextSystem struct { //次优优先级操作系统
-	MacOS string `json:"MacOS"`
-	Linux string `json:"Linux"`
+type CreateEnv struct {
+	CustomerId    string `json:"customerId" form:"customerId"`       //三方用户id
+	EnvName       string `json:"envName" form:"envName"`             //环境名称
+	Serial        string `json:"serial" form:"serial"`               //环境序号
+	Proxy         string `json:"proxy" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy   string `json:"bridgeProxy" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	IpChannel     string `json:"ipChannel" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
+	Region        string `json:"region" form:"region"`               //国家代号，当无法获取代理配置时，传此参数生成对应区域ip，否则获取客户端ip
+	Kernel        string `json:"kernel" form:"kernel"`               //内核,以Finger中的kernel为准
+	KernelVersion string `json:"kernelVersion" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
+	Finger        Finger `json:"finger" form:"finger"`
+}
+
+type UpdateEnv struct {
+	EnvId         string  `json:"envId" form:"envId"`                 //envid为空时自动生成
+	CustomerId    *string `json:"customerId" form:"customerId"`       //三方用户id
+	EnvName       *string `json:"envName" form:"envName"`             //环境名称
+	Serial        *string `json:"serial" form:"serial"`               //环境序号
+	Proxy         *string `json:"proxy" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy   *string `json:"bridgeProxy" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	IpChannel     *string `json:"ipChannel" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
+	Region        *string `json:"region" form:"region"`               //国家代号，当无法获取代理配置时，传此参数生成对应区域ip，否则获取客户端ip
+	Kernel        *string `json:"kernel" form:"kernel"`               //内核,以Finger中的kernel为准
+	KernelVersion *string `json:"kernelVersion" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
+	Finger        *Finger `json:"finger" form:"finger"`
+}
+
+type UpdateEnvMeta struct {
+	EnvId       string  `json:"envId" form:"envId"`             //envid为空时自动生成
+	CustomerId  *string `json:"customerId" form:"customerId"`   //三方用户id
+	EnvName     *string `json:"envName" form:"envName"`         //环境名称
+	Serial      *string `json:"serial" form:"serial"`           //环境序号
+	Proxy       *string `json:"proxy" form:"proxy"`             //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy *string `json:"bridgeProxy" form:"bridgeProxy"` //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
 }
 
 type Finger struct {

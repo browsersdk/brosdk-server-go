@@ -412,9 +412,11 @@ func TestClient_EnvCreate_Success(t *testing.T) {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 
-	req := &EnvInfo{
-		CustomerId: "test-customer",
-		EnvName:    "Test Environment",
+	customerId := "test-customer"
+	envName := "Test Environment"
+	req := &CreateEnv{
+		CustomerId: customerId,
+		EnvName:    envName,
 	}
 
 	resp, err := client.EnvCreate(context.Background(), req)
@@ -462,10 +464,12 @@ func TestClient_EnvUpdate_Success(t *testing.T) {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 
-	req := &EnvInfo{
+	customerId := "test-customer"
+	envName := "Test Environment"
+	req := &UpdateEnv{
 		EnvId:      "456",
-		CustomerId: "test-customer",
-		EnvName:    "Updated Environment",
+		CustomerId: &customerId,
+		EnvName:    &envName,
 	}
 
 	resp, err := client.EnvUpdate(context.Background(), req)

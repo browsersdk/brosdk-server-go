@@ -62,7 +62,7 @@ func getUserSignatureExample(client *brosdk.Client) error {
 func createEnvironmentExample(client *brosdk.Client) error {
 	fmt.Println("2. Creating Browser Environment...")
 
-	req := &brosdk.EnvInfo{
+	req := &brosdk.CreateEnv{
 		CustomerId: "demo-customer",
 		EnvName:    "Demo Browser Environment",
 		Finger: brosdk.Finger{

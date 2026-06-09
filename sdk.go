@@ -243,7 +243,7 @@ func (c *Client) GetUserSig(ctx context.Context, req *GetUserSigRequest) (*UserS
 }
 
 // EnvCreate creates a new environment with the specified parameters
-func (c *Client) EnvCreate(ctx context.Context, req *EnvInfo) (*EnvInfo, error) {
+func (c *Client) EnvCreate(ctx context.Context, req *CreateEnv) (*EnvInfo, error) {
 	const method, path = "POST", "/api/v2/browser/create"
 
 	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
@@ -269,8 +269,34 @@ func (c *Client) EnvCreate(ctx context.Context, req *EnvInfo) (*EnvInfo, error) 
 }
 
 // EnvUpdate updates an existing browser environment
-func (c *Client) EnvUpdate(ctx context.Context, req *EnvInfo) (*EnvInfo, error) {
+func (c *Client) EnvUpdate(ctx context.Context, req *UpdateEnv) (*EnvInfo, error) {
 	const method, path = "POST", "/api/v2/browser/update"
+
+	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create EnvUpdate request: %w", err)
+	}
+
+	respBody, _, err := c.doWithDebug(method, path, httpReq, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("EnvUpdate request failed: %w", err)
+	}
+
+	var result EnvResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode EnvUpdate response: %w", err)
+	}
+
+	if result.Code != 200 {
+		return nil, fmt.Errorf("EnvUpdate failed (code=%d): %s", result.Code, result.Msg)
+	}
+
+	return &result.Data, nil
+}
+
+// EnvUpdate updates an existing browser environment with a new name
+func (c *Client) EnvUpdateEnvMeta(ctx context.Context, req *UpdateEnvMeta) (*EnvInfo, error) {
+	const method, path = "POST", "/api/v2/browser/updateEnv"
 
 	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
 	if err != nil {
