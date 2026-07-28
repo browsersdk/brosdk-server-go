@@ -294,27 +294,27 @@ func (c *Client) EnvUpdate(ctx context.Context, req *UpdateEnv) (*EnvInfo, error
 	return &result.Data, nil
 }
 
-// EnvUpdate updates an existing browser environment with a new name
+// EnvUpdateEnvMeta updates environment metadata without changing its fingerprint.
 func (c *Client) EnvUpdateEnvMeta(ctx context.Context, req *UpdateEnvMeta) (*EnvInfo, error) {
 	const method, path = "POST", "/api/v2/browser/updateEnv"
 
 	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create EnvUpdate request: %w", err)
+		return nil, fmt.Errorf("failed to create EnvUpdateEnvMeta request: %w", err)
 	}
 
 	respBody, _, err := c.doWithDebug(method, path, httpReq, reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("EnvUpdate request failed: %w", err)
+		return nil, fmt.Errorf("EnvUpdateEnvMeta request failed: %w", err)
 	}
 
 	var result EnvResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("failed to decode EnvUpdate response: %w", err)
+		return nil, fmt.Errorf("failed to decode EnvUpdateEnvMeta response: %w", err)
 	}
 
 	if result.Code != 200 {
-		return nil, fmt.Errorf("EnvUpdate failed (code=%d): %s", result.Code, result.Msg)
+		return nil, fmt.Errorf("EnvUpdateEnvMeta failed (code=%d): %s", result.Code, result.Msg)
 	}
 
 	return &result.Data, nil
@@ -395,5 +395,102 @@ func (c *Client) GetUiFingerList(ctx context.Context) (*GetUiFingerList, error) 
 		return nil, fmt.Errorf("GetUiFingerList failed (code=%d): %s", result.Code, result.Msg)
 	}
 
+	return &result.Data, nil
+}
+
+func (c *Client) getBrowserStringMap(ctx context.Context, operation, path string) (map[string]string, error) {
+	httpReq, _, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create %s request: %w", operation, err)
+	}
+	respBody, _, err := c.doWithDebug(http.MethodGet, path, httpReq, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%s request failed: %w", operation, err)
+	}
+	var result StringMapResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode %s response: %w", operation, err)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("%s failed (code=%d): %s", operation, result.Code, result.Msg)
+	}
+	return result.Data, nil
+}
+
+// GetPlatformList retrieves supported browser kernel platforms.
+func (c *Client) GetPlatformList(ctx context.Context) (map[string]string, error) {
+	return c.getBrowserStringMap(ctx, "GetPlatformList", "/api/v2/browser/platformList")
+}
+
+// GetArchList retrieves supported browser kernel architectures.
+func (c *Client) GetArchList(ctx context.Context) (map[string]string, error) {
+	return c.getBrowserStringMap(ctx, "GetArchList", "/api/v2/browser/archList")
+}
+
+// GetKernelIdList retrieves supported browser kernel identifiers.
+func (c *Client) GetKernelIdList(ctx context.Context) (map[string]string, error) {
+	return c.getBrowserStringMap(ctx, "GetKernelIdList", "/api/v2/browser/kernelIdList")
+}
+
+// GetKernelList retrieves available browser kernels with optional filters.
+func (c *Client) GetKernelList(ctx context.Context, req *KernelListRequest) (*KernelPage, error) {
+	const method, path = "POST", "/api/v2/browser/kernelList"
+	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GetKernelList request: %w", err)
+	}
+	respBody, _, err := c.doWithDebug(method, path, httpReq, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("GetKernelList request failed: %w", err)
+	}
+	var result KernelPageResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode GetKernelList response: %w", err)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("GetKernelList failed (code=%d): %s", result.Code, result.Msg)
+	}
+	return &result.Data, nil
+}
+
+// GetGlobalFinger retrieves global fingerprint settings.
+func (c *Client) GetGlobalFinger(ctx context.Context, req *GlobalFingerListRequest) (*GlobalFingerPage, error) {
+	const method, path = "POST", "/api/v2/browser/getGlobalFinger"
+	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GetGlobalFinger request: %w", err)
+	}
+	respBody, _, err := c.doWithDebug(method, path, httpReq, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("GetGlobalFinger request failed: %w", err)
+	}
+	var result GlobalFingerPageResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode GetGlobalFinger response: %w", err)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("GetGlobalFinger failed (code=%d): %s", result.Code, result.Msg)
+	}
+	return &result.Data, nil
+}
+
+// SetGlobalFinger creates or updates global fingerprint settings.
+func (c *Client) SetGlobalFinger(ctx context.Context, req *GlobalFingerConfig) (*GlobalFingerConfig, error) {
+	const method, path = "POST", "/api/v2/browser/setGlobalFinger"
+	httpReq, reqBody, err := c.newRequest(ctx, method, path, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SetGlobalFinger request: %w", err)
+	}
+	respBody, _, err := c.doWithDebug(method, path, httpReq, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("SetGlobalFinger request failed: %w", err)
+	}
+	var result GlobalFingerResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode SetGlobalFinger response: %w", err)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("SetGlobalFinger failed (code=%d): %s", result.Code, result.Msg)
+	}
 	return &result.Data, nil
 }

@@ -80,7 +80,7 @@ func createEnvironmentExample(client *brosdk.Client) error {
 		return fmt.Errorf("failed to create environment: %w", err)
 	}
 
-	fmt.Printf("   ✓ Success! Environment ID: %d\n", resp.EnvId)
+	fmt.Printf("   ✓ Success! Environment ID: %s\n", resp.EnvId)
 	fmt.Printf("   ✓ Environment Name: %s\n", resp.EnvName)
 
 	return nil
@@ -111,7 +111,7 @@ func listEnvironmentsExample(client *brosdk.Client) error {
 	if len(resp.List) > 0 {
 		fmt.Println("   Environment Details:")
 		for i, env := range resp.List {
-			fmt.Printf("     %d. ID: %d, Name: %s\n",
+			fmt.Printf("     %d. ID: %s, Name: %s\n",
 				i+1, env.EnvId, env.EnvName)
 		}
 	}

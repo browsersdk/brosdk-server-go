@@ -157,8 +157,8 @@ if err != nil {
     log.Fatal(err)
 }
 
-fmt.Printf("签名: %s\n", resp.Data.UserSig)
-fmt.Printf("过期时间: %d\n", resp.Data.ExpireTime)
+fmt.Printf("签名: %s\n", resp.UserSig)
+fmt.Printf("过期时间: %d\n", resp.ExpireTime)
 ```
 
 ### 🌐 EnvCreate - 创建浏览器环境
@@ -166,17 +166,14 @@ fmt.Printf("过期时间: %d\n", resp.Data.ExpireTime)
 创建新的浏览器环境配置：
 
 ```go
-req := &brosdk.EnvInfo{
+req := &brosdk.CreateEnv{
     CustomerId:  "customer123",
     EnvName:     "我的浏览器环境",
     Serial:      "001",
     Finger: brosdk.Finger{
-        System:        "Windows",
+        System:        "Windows 11",
         Kernel:        "Chrome",
-        KernelVersion: "120.0.0.0",
-        UaVersion:     "120",
-        Language:      []string{"zh-CN"},
-        Zone:          "Asia/Shanghai",
+        KernelVersion: "140",
     },
 }
 
@@ -193,22 +190,43 @@ fmt.Printf("创建的环境ID: %s\n", resp.EnvId)
 更新现有的浏览器环境：
 
 ```go
-req := &brosdk.EnvInfo{
-    EnvId:      "123",
-    CustomerId: "customer123",
-    EnvName:    "更新的环境名称",
-    Finger: brosdk.Finger{
+envName := "更新的环境名称"
+finger := brosdk.Finger{
         System:        "Windows",
         Kernel:        "Chrome",
-        KernelVersion: "120.0.0.0",
-    },
-    // 根据需要更新其他字段...
+        KernelVersion: "140",
+}
+req := &brosdk.UpdateEnv{
+    EnvId:   "123",
+    EnvName: &envName,
+    Finger:  &finger,
 }
 
 resp, err := client.EnvUpdate(context.Background(), req)
 if err != nil {
     log.Fatal(err)
 }
+```
+
+`EnvUpdate` 仅在指纹配置或生成上下文实际变化时重新生成指纹。区域参数仅为旧接口兼容字段；语言、时区等 IP 相关指纹项按创建或更新指纹请求的客户端 IP 生成。
+
+### EnvUpdateEnvMeta - 仅更新环境元数据
+
+更新名称、序号、第三方用户数据、主题或代理配置，不修改指纹：
+
+```go
+envName := "新的环境名称"
+proxy := "" // 通过非 nil 指针清空代理
+topic := "work"
+topicConfig := json.RawMessage(`{"color":"blue"}`)
+
+resp, err := client.EnvUpdateEnvMeta(context.Background(), &brosdk.UpdateEnvMeta{
+    EnvId:       "123",
+    EnvName:     &envName,
+    Proxy:       &proxy,
+    Topic:       &topic,
+    TopicConfig: &topicConfig,
+})
 ```
 
 ### 🗑️ EnvDestroy - 删除环境 (v2)
@@ -326,9 +344,18 @@ if err != nil {
 - `POST /api/env` - 环境创建
 
 ### 版本 2 端点
+- `POST /api/v2/browser/create` - 环境创建
 - `POST /api/v2/browser/update` - 环境更新
+- `POST /api/v2/browser/updateEnv` - 仅更新环境元数据
 - `POST /api/v2/browser/destroy` - 环境删除
 - `POST /api/v2/browser/page` - 环境列表
+- `GET /api/v2/browser/getUiFingerList` - 指纹配置选项
+- `GET /api/v2/browser/platformList` - 内核平台列表
+- `GET /api/v2/browser/archList` - 内核架构列表
+- `GET /api/v2/browser/kernelIdList` - 内核类型列表
+- `POST /api/v2/browser/kernelList` - 可用内核分页列表
+- `POST /api/v2/browser/getGlobalFinger` - 获取全局指纹配置
+- `POST /api/v2/browser/setGlobalFinger` - 设置全局指纹配置
 
 ## 🔒 安全特性
 

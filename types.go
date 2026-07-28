@@ -1,5 +1,10 @@
 package brosdk
 
+import (
+	"encoding/json"
+	"time"
+)
+
 // Response represents the standard API response structure
 type Response struct {
 	Code  int         `json:"code"`
@@ -12,6 +17,7 @@ type Response struct {
 type GetUserSigRequest struct {
 	CustomerId string `json:"customerId"`
 	Duration   int    `json:"duration"`
+	Role       string `json:"role"` // app 可管理环境，user 仅可使用环境
 }
 
 // UserSigData represents the data structure in GetUserSig response
@@ -44,53 +50,63 @@ type Font struct {
 
 // EnvRequest represents the request parameters for EnvCreate
 type EnvInfo struct {
-	EnvId         string `json:"envId,omitempty" form:"envId"`                 //envid为空时自动生成
-	CustomerId    string `json:"customerId,omitempty" form:"customerId"`       //三方用户id
-	EnvName       string `json:"envName,omitempty" form:"envName"`             //环境名称
-	Serial        string `json:"serial,omitempty" form:"serial"`               //环境序号
-	Proxy         string `json:"proxy,omitempty" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	BridgeProxy   string `json:"bridgeProxy,omitempty" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	IpChannel     string `json:"ipChannel,omitempty" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
-	Region        string `json:"region,omitempty" form:"region"`               //国家代号，当无法获取代理配置时，传此参数生成对应区域ip，否则获取客户端ip
-	Kernel        string `json:"kernel,omitempty" form:"kernel"`               //内核,以Finger中的kernel为准
-	KernelVersion string `json:"kernelVersion,omitempty" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
-	Finger        Finger `json:"finger,omitempty" form:"finger"`
+	EnvId         string          `json:"envId,omitempty" form:"envId"`                 //envid为空时自动生成
+	CustomerId    string          `json:"customerId,omitempty" form:"customerId"`       //三方用户id
+	Topic         string          `json:"topic,omitempty" form:"topic"`                 //主题
+	TopicConfig   json.RawMessage `json:"topicConfig,omitempty" form:"topicConfig"`     //主题配置
+	EnvName       string          `json:"envName,omitempty" form:"envName"`             //环境名称
+	Serial        string          `json:"serial,omitempty" form:"serial"`               //环境序号
+	Proxy         string          `json:"proxy,omitempty" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy   string          `json:"bridgeProxy,omitempty" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	IpChannel     string          `json:"ipChannel,omitempty" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
+	Region        string          `json:"region,omitempty" form:"region"`               //兼容旧接口保留，指纹生成不再使用
+	Kernel        string          `json:"kernel,omitempty" form:"kernel"`               //内核,以Finger中的kernel为准
+	KernelVersion string          `json:"kernelVersion,omitempty" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
+	Finger        Finger          `json:"finger,omitempty" form:"finger"`
+	CreatedAt     time.Time       `json:"createdAt"`
+	UpdatedAt     *time.Time      `json:"updatedAt"`
 }
 
 type CreateEnv struct {
-	CustomerId    string `json:"customerId" form:"customerId"`       //三方用户id
-	EnvName       string `json:"envName" form:"envName"`             //环境名称
-	Serial        string `json:"serial" form:"serial"`               //环境序号
-	Proxy         string `json:"proxy" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	BridgeProxy   string `json:"bridgeProxy" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	IpChannel     string `json:"ipChannel" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
-	Region        string `json:"region" form:"region"`               //国家代号，当无法获取代理配置时，传此参数生成对应区域ip，否则获取客户端ip
-	Kernel        string `json:"kernel" form:"kernel"`               //内核,以Finger中的kernel为准
-	KernelVersion string `json:"kernelVersion" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
-	Finger        Finger `json:"finger" form:"finger"`
+	CustomerId    string          `json:"customerId" form:"customerId"`       //三方用户id
+	Topic         string          `json:"topic" form:"topic"`                 //主题
+	TopicConfig   json.RawMessage `json:"topicConfig" form:"topicConfig"`     //主题配置
+	EnvName       string          `json:"envName" form:"envName"`             //环境名称
+	Serial        string          `json:"serial" form:"serial"`               //环境序号
+	Proxy         string          `json:"proxy" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy   string          `json:"bridgeProxy" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	IpChannel     string          `json:"ipChannel" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
+	Region        string          `json:"region" form:"region"`               //兼容旧请求保留，指纹生成不再使用
+	Kernel        string          `json:"kernel" form:"kernel"`               //内核,以Finger中的kernel为准
+	KernelVersion string          `json:"kernelVersion" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
+	Finger        Finger          `json:"finger" form:"finger"`
 }
 
 type UpdateEnv struct {
-	EnvId         string  `json:"envId" form:"envId"`                 //envid为空时自动生成
-	CustomerId    *string `json:"customerId" form:"customerId"`       //三方用户id
-	EnvName       *string `json:"envName" form:"envName"`             //环境名称
-	Serial        *string `json:"serial" form:"serial"`               //环境序号
-	Proxy         *string `json:"proxy" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	BridgeProxy   *string `json:"bridgeProxy" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	IpChannel     *string `json:"ipChannel" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
-	Region        *string `json:"region" form:"region"`               //国家代号，当无法获取代理配置时，传此参数生成对应区域ip，否则获取客户端ip
-	Kernel        *string `json:"kernel" form:"kernel"`               //内核,以Finger中的kernel为准
-	KernelVersion *string `json:"kernelVersion" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
-	Finger        *Finger `json:"finger" form:"finger"`
+	EnvId         string           `json:"envId" form:"envId"`                 //envid为空时自动生成
+	CustomerId    *string          `json:"customerId" form:"customerId"`       //三方用户id
+	Topic         *string          `json:"topic" form:"topic"`                 //主题
+	TopicConfig   *json.RawMessage `json:"topicConfig" form:"topicConfig"`     //主题配置
+	EnvName       *string          `json:"envName" form:"envName"`             //环境名称
+	Serial        *string          `json:"serial" form:"serial"`               //环境序号
+	Proxy         *string          `json:"proxy" form:"proxy"`                 //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy   *string          `json:"bridgeProxy" form:"bridgeProxy"`     //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	IpChannel     *string          `json:"ipChannel" form:"ipChannel"`         //IP监测渠道  海外代理：ip2location，国内代理：ipdata
+	Region        *string          `json:"region" form:"region"`               //兼容旧请求保留，指纹生成不再使用
+	Kernel        *string          `json:"kernel" form:"kernel"`               //内核,以Finger中的kernel为准
+	KernelVersion *string          `json:"kernelVersion" form:"kernelVersion"` //内核版本，以Finger中的kernelVersion为准
+	Finger        *Finger          `json:"finger" form:"finger"`
 }
 
 type UpdateEnvMeta struct {
-	EnvId       string  `json:"envId" form:"envId"`             //envid为空时自动生成
-	CustomerId  *string `json:"customerId" form:"customerId"`   //三方用户id
-	EnvName     *string `json:"envName" form:"envName"`         //环境名称
-	Serial      *string `json:"serial" form:"serial"`           //环境序号
-	Proxy       *string `json:"proxy" form:"proxy"`             //代理配置，格式为：socks5://user:pwd@ipaddr:6666
-	BridgeProxy *string `json:"bridgeProxy" form:"bridgeProxy"` //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	EnvId       string           `json:"envId" form:"envId"`             //envid为空时自动生成
+	CustomerId  *string          `json:"customerId" form:"customerId"`   //三方用户id
+	Topic       *string          `json:"topic" form:"topic"`             //主题
+	TopicConfig *json.RawMessage `json:"topicConfig" form:"topicConfig"` //主题配置
+	EnvName     *string          `json:"envName" form:"envName"`         //环境名称
+	Serial      *string          `json:"serial" form:"serial"`           //环境序号
+	Proxy       *string          `json:"proxy" form:"proxy"`             //代理配置，格式为：socks5://user:pwd@ipaddr:6666
+	BridgeProxy *string          `json:"bridgeProxy" form:"bridgeProxy"` //桥代理配置，格式为：socks5://user:pwd@ipaddr:6666
 }
 
 type Finger struct {
@@ -109,7 +125,8 @@ type EnvResponse struct {
 
 // EnvReq represents the request parameters for destroy operation
 type EnvDelReq struct {
-	EnvId string `json:"envId" form:"envId"` //
+	EnvId  string   `json:"envId" form:"envId"`
+	EnvIds []string `json:"envIds" form:"envIds"`
 }
 
 // ReqPage represents pagination request parameters
@@ -148,6 +165,29 @@ type KernelVersionInfo struct {
 	Version string `json:"version"`
 }
 
+type KernelVersionOption struct {
+	Id             int64  `json:"id"`
+	Label          string `json:"label"`
+	Kernel         string `json:"kernel"`
+	KernelVersion  string `json:"kernelVersion"`
+	KernelId       string `json:"kernelId"`
+	KernelName     string `json:"kernelName"`
+	MajorVersion   string `json:"majorVersion"`
+	Platform       string `json:"platform"`
+	PlatformDesc   string `json:"platformDesc"`
+	Arch           string `json:"arch"`
+	ArchDesc       string `json:"archDesc"`
+	VersionCode    int    `json:"versionCode"`
+	MinVersionCode int    `json:"minVersionCode"`
+	FingerMode     string `json:"fingerMode"`
+	FingerModeDesc string `json:"fingerModeDesc"`
+	CanCreate      bool   `json:"canCreate"`
+	Url            string `json:"url,omitempty"`
+	Md5            string `json:"md5,omitempty"`
+	Sha256         string `json:"sha256,omitempty"`
+	ReleaseNotes   string `json:"releaseNotes,omitempty"`
+}
+
 type SYSDEVICE struct {
 	Name            string `json:"name"`            //系统平台 Windows Android MAC iPhone Linux
 	System          string `json:"system"`          //具体的系统版本号
@@ -173,19 +213,20 @@ type CONAB struct {
 }
 
 type GetUiFingerList struct {
-	ChromeKernelversion   []KernelVersionInfo `json:"chromeKernelVersion"`   //支持的浏览器内核大版本
-	FirefoxKernelversion  []KernelVersionInfo `json:"firefoxKernelversion"`  //支持的浏览器火狐内核大版本
-	System                SYSTEMKERNEL        `json:"system"`                //操作系统版本
-	ChromeUAversion       []string            `json:"chromeUAversion"`       //浏览器UA版本
-	FirefoxUAversion      []string            `json:"firefoxUAversion"`      //火狐浏览器UA版本
-	Language              []CONAB             `json:"language"`              //语言
-	Zone                  []string            `json:"zone"`                  //时区
-	Dpi                   any                 `json:"dpi"`                   //屏幕分辨率
-	Webgl                 any                 `json:"webgl"`                 //webgl
-	Cpu                   any                 `json:"cpu"`                   //CPU参数
-	Mem                   any                 `json:"mem"`                   //内存参数
-	Region                any                 `json:"region"`                //Region
-	PlatformKernelversion any                 `json:"platformKernelversion"` //平台可用的内核
+	ChromeKernelversion   []KernelVersionInfo   `json:"chromeKernelVersion"`  //支持的浏览器内核大版本
+	FirefoxKernelversion  []KernelVersionInfo   `json:"firefoxKernelversion"` //支持的浏览器火狐内核大版本
+	System                SYSTEMKERNEL          `json:"system"`               //操作系统版本
+	ChromeUAversion       []string              `json:"chromeUAversion"`      //浏览器UA版本
+	FirefoxUAversion      []string              `json:"firefoxUAversion"`     //火狐浏览器UA版本
+	Language              []CONAB               `json:"language"`             //语言
+	Zone                  []string              `json:"zone"`                 //时区
+	Dpi                   any                   `json:"dpi"`                  //屏幕分辨率
+	Webgl                 any                   `json:"webgl"`                //webgl
+	Cpu                   any                   `json:"cpu"`                  //CPU参数
+	Mem                   any                   `json:"mem"`                  //内存参数
+	Region                any                   `json:"region"`               //兼容旧响应保留，不再提供区域选项
+	KernelOptions         []KernelVersionOption `json:"kernelOptions"`
+	PlatformKernelversion any                   `json:"platformKernelversion"` //平台可用的内核
 }
 
 type GetUiFingerListResponse struct {
@@ -193,4 +234,82 @@ type GetUiFingerListResponse struct {
 	Data  GetUiFingerList `json:"data"`
 	Msg   string          `json:"msg"`
 	ReqId string          `json:"reqId"`
+}
+
+type StringMapResponse struct {
+	Code  int               `json:"code"`
+	Data  map[string]string `json:"data"`
+	Msg   string            `json:"msg"`
+	ReqId string            `json:"reqId"`
+}
+
+type KernelListRequest struct {
+	ReqPage
+	KernelId     string `json:"kernelId,omitempty" form:"kernelId"`
+	MajorVersion string `json:"majorVersion,omitempty" form:"majorVersion"`
+	Platform     string `json:"platform,omitempty" form:"platform"`
+	Arch         string `json:"arch,omitempty" form:"arch"`
+	Status       int16  `json:"status,omitempty" form:"status"`
+}
+
+type KernelPage struct {
+	List        []KernelVersionOption `json:"list"`
+	Total       int64                 `json:"total"`
+	PageSize    int                   `json:"pageSize"`
+	CurrentPage int                   `json:"currentPage"`
+}
+
+type KernelPageResponse struct {
+	Code  int        `json:"code"`
+	Data  KernelPage `json:"data"`
+	Msg   string     `json:"msg"`
+	ReqId string     `json:"reqId"`
+}
+
+type GlobalFinger struct {
+	EnableNotice   int    `json:"enableNotice"`
+	EnablePic      int    `json:"enablePic"`
+	PicSize        string `json:"picSize"`
+	EnableGc       int    `json:"enableGc"`
+	GcTime         int    `json:"gcTime"`
+	EnableSound    int    `json:"enableSound"`
+	EnableVideo    int    `json:"enableVideo"`
+	SearchEngine   int    `json:"searchEngine"`
+	TranslateLang  int    `json:"translateLang"`
+	EnableStorage  int    `json:"enableStorage"`
+	EnableDevtools int    `json:"enableDevtools"`
+	ClearCookie    int    `json:"clearCookie"`
+	ClearStorage   int    `json:"clearStorage"`
+	ShortName      int    `json:"shortName"`
+}
+
+type GlobalFingerConfig struct {
+	CustomerId   string       `json:"customerId" form:"customerId"`
+	GlobalFinger GlobalFinger `json:"globalFinger" form:"globalFinger"`
+}
+
+type GlobalFingerListRequest struct {
+	ReqPage
+	CustomerId string `json:"customerId,omitempty" form:"customerId"`
+}
+
+type GlobalFingerPage struct {
+	List        []GlobalFingerConfig `json:"list"`
+	Total       int64                `json:"total"`
+	PageSize    int                  `json:"pageSize"`
+	CurrentPage int                  `json:"currentPage"`
+}
+
+type GlobalFingerPageResponse struct {
+	Code  int              `json:"code"`
+	Data  GlobalFingerPage `json:"data"`
+	Msg   string           `json:"msg"`
+	ReqId string           `json:"reqId"`
+}
+
+type GlobalFingerResponse struct {
+	Code  int                `json:"code"`
+	Data  GlobalFingerConfig `json:"data"`
+	Msg   string             `json:"msg"`
+	ReqId string             `json:"reqId"`
 }

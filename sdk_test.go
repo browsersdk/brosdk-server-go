@@ -483,6 +483,250 @@ func TestClient_EnvUpdate_Success(t *testing.T) {
 
 }
 
+func TestClient_EnvUpdateEnvMeta_Success(t *testing.T) {
+	topic := "work"
+	topicConfig := json.RawMessage(`{"color":"blue"}`)
+	emptyProxy := ""
+
+	mockTransport := &MockRoundTripper{
+		RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if req.URL.Path != "/api/v2/browser/updateEnv" {
+				t.Errorf("Expected path /api/v2/browser/updateEnv, got %s", req.URL.Path)
+			}
+			var body map[string]json.RawMessage
+			if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			if string(body["topicConfig"]) != string(topicConfig) {
+				t.Errorf("topicConfig = %s, want %s", body["topicConfig"], topicConfig)
+			}
+			if string(body["proxy"]) != `""` {
+				t.Errorf("proxy = %s, want empty string update", body["proxy"])
+			}
+
+			return &http.Response{
+				StatusCode: 200,
+				Body: io.NopCloser(strings.NewReader(
+					`{"code":200,"data":{"envId":"456","topic":"work","topicConfig":{"color":"blue"}},"msg":"OK"}`,
+				)),
+				Header: make(http.Header),
+			}, nil
+		},
+	}
+
+	client, err := NewClient("test-key", WithHTTPClient(&http.Client{Transport: mockTransport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.EnvUpdateEnvMeta(context.Background(), &UpdateEnvMeta{
+		EnvId:       "456",
+		Topic:       &topic,
+		TopicConfig: &topicConfig,
+		Proxy:       &emptyProxy,
+	})
+	if err != nil {
+		t.Fatalf("EnvUpdateEnvMeta() error = %v", err)
+	}
+	if resp.Topic != topic || string(resp.TopicConfig) != string(topicConfig) {
+		t.Fatalf("unexpected metadata response: %+v", resp)
+	}
+}
+
+func TestEnvironmentRequestJSONContract(t *testing.T) {
+	topic := "work"
+	region := "US"
+	topicConfig := json.RawMessage(`{"color":"blue"}`)
+
+	data, err := json.Marshal(UpdateEnv{
+		EnvId:       "456",
+		Topic:       &topic,
+		TopicConfig: &topicConfig,
+		Region:      &region,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(data, &body); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"envId", "topic", "topicConfig", "region"} {
+		if _, ok := body[field]; !ok {
+			t.Fatalf("request JSON missing %q: %s", field, data)
+		}
+	}
+}
+
+func TestAdditionalBrowserRequestFieldsRemainAvailable(t *testing.T) {
+	userSig, err := json.Marshal(GetUserSigRequest{CustomerId: "customer", Duration: 3600, Role: "user"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(userSig), `"role":"user"`) {
+		t.Fatalf("GetUserSig request missing role: %s", userSig)
+	}
+
+	destroy, err := json.Marshal(EnvDelReq{EnvIds: []string{"1", "2"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(destroy), `"envIds":["1","2"]`) {
+		t.Fatalf("destroy request missing envIds: %s", destroy)
+	}
+}
+
+func TestGetUiFingerListResponseSupportsKernelOptionsAndEmptyRegion(t *testing.T) {
+	var response GetUiFingerListResponse
+	err := json.Unmarshal([]byte(`{
+		"code":200,
+		"data":{
+			"region":null,
+			"kernelOptions":[{
+				"id":1,
+				"label":"Chrome 140 (windows/x86_64)",
+				"kernel":"Chrome",
+				"kernelVersion":"140",
+				"platform":"windows",
+				"arch":"x86_64",
+				"fingerMode":"server",
+				"canCreate":true
+			}]
+		}
+	}`), &response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Data.Region != nil {
+		t.Fatalf("region = %#v, want nil compatibility field", response.Data.Region)
+	}
+	if len(response.Data.KernelOptions) != 1 {
+		t.Fatalf("kernelOptions length = %d", len(response.Data.KernelOptions))
+	}
+	option := response.Data.KernelOptions[0]
+	if option.Kernel != "Chrome" || option.KernelVersion != "140" || !option.CanCreate {
+		t.Fatalf("unexpected kernel option: %+v", option)
+	}
+}
+
+func TestClient_BrowserMetadataLists(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		call func(*Client) (map[string]string, error)
+	}{
+		{name: "platforms", path: "/api/v2/browser/platformList", call: func(c *Client) (map[string]string, error) {
+			return c.GetPlatformList(context.Background())
+		}},
+		{name: "architectures", path: "/api/v2/browser/archList", call: func(c *Client) (map[string]string, error) {
+			return c.GetArchList(context.Background())
+		}},
+		{name: "kernel IDs", path: "/api/v2/browser/kernelIdList", call: func(c *Client) (map[string]string, error) {
+			return c.GetKernelIdList(context.Background())
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockTransport := &MockRoundTripper{RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+				if req.Method != http.MethodGet || req.URL.Path != tt.path {
+					t.Fatalf("request = %s %s, want GET %s", req.Method, req.URL.Path, tt.path)
+				}
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader(`{"code":200,"data":{"key":"value"},"msg":"OK"}`)),
+					Header:     make(http.Header),
+				}, nil
+			}}
+			client, err := NewClient("test-key", WithHTTPClient(&http.Client{Transport: mockTransport}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := tt.call(client)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got["key"] != "value" {
+				t.Fatalf("response = %#v", got)
+			}
+		})
+	}
+}
+
+func TestClient_GetKernelList(t *testing.T) {
+	mockTransport := &MockRoundTripper{RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+		if req.URL.Path != "/api/v2/browser/kernelList" {
+			t.Fatalf("path = %s", req.URL.Path)
+		}
+		var body KernelListRequest
+		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		if body.Platform != "windows" || body.Arch != "x86_64" {
+			t.Fatalf("request = %+v", body)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(strings.NewReader(
+				`{"code":200,"data":{"list":[{"id":1,"kernel":"Chrome","kernelVersion":"140","canCreate":true}],"total":1,"pageSize":20,"currentPage":1},"msg":"OK"}`,
+			)),
+			Header: make(http.Header),
+		}, nil
+	}}
+	client, err := NewClient("test-key", WithHTTPClient(&http.Client{Transport: mockTransport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := client.GetKernelList(context.Background(), &KernelListRequest{
+		ReqPage: ReqPage{Page: 1, PageSize: 20}, Platform: "windows", Arch: "x86_64",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Total != 1 || len(page.List) != 1 || page.List[0].KernelVersion != "140" {
+		t.Fatalf("page = %+v", page)
+	}
+}
+
+func TestClient_GlobalFinger(t *testing.T) {
+	setCalled := false
+	mockTransport := &MockRoundTripper{RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+		switch req.URL.Path {
+		case "/api/v2/browser/getGlobalFinger":
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body: io.NopCloser(strings.NewReader(
+					`{"code":200,"data":{"list":[{"customerId":"customer","globalFinger":{"enableNotice":1}}],"total":1,"pageSize":20,"currentPage":1},"msg":"OK"}`,
+				)),
+				Header: make(http.Header),
+			}, nil
+		case "/api/v2/browser/setGlobalFinger":
+			setCalled = true
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"code":200,"data":{"customerId":"customer","globalFinger":{"enableNotice":2}},"msg":"OK"}`)),
+				Header:     make(http.Header),
+			}, nil
+		default:
+			t.Fatalf("unexpected path %s", req.URL.Path)
+			return nil, nil
+		}
+	}}
+	client, err := NewClient("test-key", WithHTTPClient(&http.Client{Transport: mockTransport}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := client.GetGlobalFinger(context.Background(), &GlobalFingerListRequest{ReqPage: ReqPage{Page: 1, PageSize: 20}})
+	if err != nil || page.Total != 1 || page.List[0].GlobalFinger.EnableNotice != 1 {
+		t.Fatalf("GetGlobalFinger() page=%+v err=%v", page, err)
+	}
+	updated, err := client.SetGlobalFinger(context.Background(), &GlobalFingerConfig{
+		CustomerId: "customer", GlobalFinger: GlobalFinger{EnableNotice: 2},
+	})
+	if err != nil || !setCalled || updated.GlobalFinger.EnableNotice != 2 {
+		t.Fatalf("SetGlobalFinger() data=%+v called=%v err=%v", updated, setCalled, err)
+	}
+}
+
 func TestClient_EnvDestroy_Success(t *testing.T) {
 	mockTransport := &MockRoundTripper{
 		RoundTripFunc: func(req *http.Request) (*http.Response, error) {

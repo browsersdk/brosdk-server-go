@@ -158,8 +158,8 @@ if err != nil {
     log.Fatal(err)
 }
 
-fmt.Printf("Signature: %s\n", resp.Data.UserSig)
-fmt.Printf("Expires: %d\n", resp.Data.ExpireTime)
+fmt.Printf("Signature: %s\n", resp.UserSig)
+fmt.Printf("Expires: %d\n", resp.ExpireTime)
 ```
 
 ### 🌐 EnvCreate - Create Browser Environment
@@ -167,17 +167,14 @@ fmt.Printf("Expires: %d\n", resp.Data.ExpireTime)
 Create a new browser environment configuration:
 
 ```go
-req := &brosdk.EnvInfo{
+req := &brosdk.CreateEnv{
     CustomerId:  "customer123",
     EnvName:     "My Browser Environment",
     Serial:      "001",
     Finger: brosdk.Finger{
-        System:        "Windows",
+        System:        "Windows 11",
         Kernel:        "Chrome",
-        KernelVersion: "120.0.0.0",
-        UaVersion:     "120",
-        Language:      []string{"zh-CN"},
-        Zone:          "Asia/Shanghai",
+        KernelVersion: "140",
     },
 }
 
@@ -194,22 +191,43 @@ fmt.Printf("Created Environment ID: %s\n", resp.EnvId)
 Update an existing browser environment:
 
 ```go
-req := &brosdk.EnvInfo{
-    EnvId:      "123",
-    CustomerId: "customer123",
-    EnvName:    "Updated Environment Name",
-    Finger: brosdk.Finger{
+envName := "Updated Environment Name"
+finger := brosdk.Finger{
         System:        "Windows",
         Kernel:        "Chrome",
-        KernelVersion: "120.0.0.0",
-    },
-    // Update other fields as needed...
+        KernelVersion: "140",
+}
+req := &brosdk.UpdateEnv{
+    EnvId:   "123",
+    EnvName: &envName,
+    Finger:  &finger,
 }
 
 resp, err := client.EnvUpdate(context.Background(), req)
 if err != nil {
     log.Fatal(err)
 }
+```
+
+`EnvUpdate` regenerates fingerprints only when fingerprint settings or generation context actually change. The region parameter remains for backward compatibility only; IP-related fingerprint values are based on the client IP of the create or fingerprint update request.
+
+### EnvUpdateEnvMeta - Update Environment Metadata Only
+
+Update the name, serial, third-party data, topic, or proxy settings without changing the fingerprint:
+
+```go
+envName := "New Environment Name"
+proxy := "" // clear the proxy by passing a non-nil pointer
+topic := "work"
+topicConfig := json.RawMessage(`{"color":"blue"}`)
+
+resp, err := client.EnvUpdateEnvMeta(context.Background(), &brosdk.UpdateEnvMeta{
+    EnvId:       "123",
+    EnvName:     &envName,
+    Proxy:       &proxy,
+    Topic:       &topic,
+    TopicConfig: &topicConfig,
+})
 ```
 
 ### 🗑️ EnvDestroy - Delete Environment (v2)
@@ -327,9 +345,18 @@ if err != nil {
 - `POST /api/env` - Environment creation
 
 ### Version 2 Endpoints
+- `POST /api/v2/browser/create` - Environment creation
 - `POST /api/v2/browser/update` - Environment updates
+- `POST /api/v2/browser/updateEnv` - Environment metadata updates
 - `POST /api/v2/browser/destroy` - Environment deletion
 - `POST /api/v2/browser/page` - Environment listing
+- `GET /api/v2/browser/getUiFingerList` - Fingerprint configuration options
+- `GET /api/v2/browser/platformList` - Kernel platforms
+- `GET /api/v2/browser/archList` - Kernel architectures
+- `GET /api/v2/browser/kernelIdList` - Kernel identifiers
+- `POST /api/v2/browser/kernelList` - Available kernels
+- `POST /api/v2/browser/getGlobalFinger` - Global fingerprint settings
+- `POST /api/v2/browser/setGlobalFinger` - Update global fingerprint settings
 
 ## 🔒 Security Features
 
