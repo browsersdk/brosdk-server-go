@@ -483,6 +483,39 @@ func TestClient_EnvUpdate_Success(t *testing.T) {
 
 }
 
+func TestFingerOptionalLocaleAndPublicIPFields(t *testing.T) {
+	emptyLanguage := []string{}
+	emptyZone := ""
+	emptyPublicIP := ""
+
+	data, err := json.Marshal(Finger{
+		Language: &emptyLanguage,
+		Zone:     &emptyZone,
+		PublicIp: &emptyPublicIP,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"language", "zone", "publicIp"} {
+		if _, ok := fields[field]; !ok {
+			t.Fatalf("field %q missing from %s", field, data)
+		}
+	}
+
+	data, err = json.Marshal(Finger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "{}" {
+		t.Fatalf("omitted fields encoded as %s, want {}", data)
+	}
+}
+
 func TestClient_EnvUpdateEnvMeta_Success(t *testing.T) {
 	topic := "work"
 	topicConfig := json.RawMessage(`{"color":"blue"}`)

@@ -110,9 +110,12 @@ type UpdateEnvMeta struct {
 }
 
 type Finger struct {
-	System        string `json:"system,omitempty"`        //系统
-	Kernel        string `json:"kernel,omitempty"`        //内核
-	KernelVersion string `json:"kernelVersion,omitempty"` //内核版本
+	System        string    `json:"system,omitempty"`        //系统
+	Kernel        string    `json:"kernel,omitempty"`        //内核
+	KernelVersion string    `json:"kernelVersion,omitempty"` //内核版本
+	Language      *[]string `json:"language,omitempty"`      //浏览器语言；空数组恢复自动生成
+	Zone          *string   `json:"zone,omitempty"`          //时区；空字符串恢复自动生成
+	PublicIp      *string   `json:"publicIp,omitempty"`      //公网 IP；未传或空字符串时自动获取
 }
 
 // EnvResponse represents the response for EnvCreate
