@@ -209,7 +209,7 @@ if err != nil {
 }
 ```
 
-`EnvUpdate` regenerates fingerprints only when fingerprint settings or generation context actually change. The region parameter remains for backward compatibility only; IP-related fingerprint values are based on the client IP of the create or fingerprint update request.
+`EnvUpdate` regenerates fingerprints only when fingerprint settings or generation context actually change. The region parameter remains for backward compatibility only; IP-related fingerprint values use the proxy IP when configured and fall back to the client IP of the create or fingerprint update request.
 
 ### EnvUpdateEnvMeta - Update Environment Metadata Only
 
